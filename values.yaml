@@ -10,8 +10,11 @@ service:
   type: ClusterIP
   labels: {}
   annotations: {}
-  ports: []
+  ports:
+    - name: http
+      port: 3000
   externalIPs: []
+  name: "example-service"
 
 labels: {}
 annotations: {}
@@ -31,3 +34,53 @@ volumes: []
 # DevSpace CLI will append all pull secrets which are automatically created
 # More infos on: https://devspace.cloud/docs/cli/image-building/workflow-basics#8-create-image-pull-secret
 pullSecrets: []
+
+# Custom configurations for HTTPRoute and HealthCheckPolicy
+gateway:
+  name: "gogateway-ai-gateway"
+
+routes:
+  - name: "example"
+    enabled: true
+    hostnames: # Using direct hostnames for local templating test
+      - "dev.gogateway.ai"
+      - "*.dev.gogateway.ai"
+    configMapHostnames:
+      enabled: false # Disable ConfigMap lookup for this test
+      name: "cluster-env"
+      keys: # List of keys within the ConfigMap containing comma-separated hostnames
+        - "DOMAIN_NAME"
+        - "WILDCARD_DOMAIN_NAME"
+    matches:
+      - type: PathPrefix
+        value: "/newui"
+    healthCheck:
+      checkIntervalSec: 15
+      timeoutSec: 10
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      logConfig:
+        enabled: true
+      httpHealthCheck:
+        requestPath: "/newui"
+  # Example of another route using direct hostnames
+  # - name: "another-route"
+  #   enabled: false
+  #   hostnames:
+  #     - "another.dev.gogateway.ai"
+  #   configMapHostnames:
+  #     enabled: false # Disable ConfigMap lookup for this route
+  #     name: ""
+  #     keys: []
+  #   matches:
+  #     - type: PathPrefix
+  #       value: "/api"
+  #   healthCheck:
+  #     checkIntervalSec: 30
+  #     timeoutSec: 15
+  #     unhealthyThreshold: 5
+  #     healthyThreshold: 2
+  #     logConfig:
+  #       enabled: false
+  #     httpHealthCheck:
+  #       requestPath: "/healthz"
