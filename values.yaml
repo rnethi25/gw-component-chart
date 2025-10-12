@@ -6,15 +6,15 @@
 containers: []
 initContainers: []
 
-service:
-  type: ClusterIP
-  labels: {}
-  annotations: {}
-  ports:
-    - name: http
-      port: 3000
-  externalIPs: []
-  name: "example-service"
+# service:
+#   type: ClusterIP
+#   labels: {}
+#   annotations: {}
+#   ports:
+#     - name: http
+#       port: 3000
+#   externalIPs: []
+#   name: "example-service"
 
 labels: {}
 annotations: {}
