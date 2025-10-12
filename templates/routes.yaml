@@ -1,0 +1,73 @@
+{{- range $i, $route := .Values.routes }}
+{{- if $route.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $.Release.Name }}-{{ $route.name }}-route
+  namespace: {{ $.Release.Namespace }}
+spec:
+  parentRefs:
+  - name: {{ $.Values.gateway.name }}
+    namespace: {{ $.Release.Namespace }}
+  hostnames:
+  {{- if $route.configMapHostnames.enabled }}
+    {{- $configMap := lookup "v1" "ConfigMap" $.Release.Namespace $route.configMapHostnames.name }}
+    {{- if $configMap }}
+      {{- $allHostnames := list }}
+      {{- range $key := $route.configMapHostnames.keys }}
+        {{- $hostnamesString := index $configMap.data $key }}
+        {{- if $hostnamesString }}
+          {{- range split "," $hostnamesString }}
+            {{- $allHostnames = append $allHostnames (. | trim) }}
+          {{- end }}
+        {{- else }}
+          {{- fail (printf "ConfigMap key '%s' not found in ConfigMap '%s' for route '%s'" $key $route.configMapHostnames.name $route.name) }}
+        {{- end }}
+      {{- end }}
+      {{- range $allHostnames }}
+      - {{ . | quote }}
+      {{- end }}
+    {{- else }}
+      {{- fail (printf "ConfigMap '%s' not found in namespace '%s' for route '%s'" $route.configMapHostnames.name $.Release.Namespace $route.name) }}
+    {{- end }}
+  {{- else }}
+    {{- range $route.hostnames }}
+    - {{ . | quote }}
+    {{- end }}
+  {{- end }}
+  rules:
+  - matches:
+    {{- range $route.matches }}
+    - path:
+        type: {{ .type }}
+        value: {{ .value | quote }}
+    {{- end }}
+    backendRefs:
+    - name: {{ $.Values.service.name }}
+      port: {{ range $.Values.service.ports }}{{- if eq .name "http" }}{{ .port }}{{- end }}{{- end }}
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: {{ $.Release.Name }}-{{ $route.name }}-health-check-policy
+  namespace: {{ $.Release.Namespace }}
+spec:
+  targetRef:
+    group: ""
+    kind: Service
+    name: {{ $.Values.service.name }}
+  default:
+    checkIntervalSec: {{ $route.healthCheck.checkIntervalSec }}
+    timeoutSec: {{ $route.healthCheck.timeoutSec }}
+    unhealthyThreshold: {{ $route.healthCheck.unhealthyThreshold }}
+    healthyThreshold: {{ $route.healthCheck.healthyThreshold }}
+    logConfig:
+      enabled: {{ $route.healthCheck.logConfig.enabled }}
+    config:
+      type: "HTTP"
+      httpHealthCheck:
+        port: {{ range $.Values.service.ports }}{{- if eq .name "http" }}{{ .port }}{{- end }}{{- end }}
+        requestPath: {{ $route.healthCheck.httpHealthCheck.requestPath | quote }}
+{{- end }}
+{{- end }}
