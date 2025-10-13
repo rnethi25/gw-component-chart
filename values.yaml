@@ -6,15 +6,15 @@
 containers: []
 initContainers: []
 
-service:
-  type: ClusterIP
-  labels: {}
-  annotations: {}
-  ports:
-    - name: http
-      port: 3000
-  externalIPs: []
-  name: "example-service"
+# service:
+#   type: ClusterIP
+#   labels: {}
+#   annotations: {}
+#   ports:
+#     - name: http
+#       port: 3000
+#   externalIPs: []
+#   name: "example-service"
 
 labels: {}
 annotations: {}
@@ -35,52 +35,76 @@ volumes: []
 # More infos on: https://devspace.cloud/docs/cli/image-building/workflow-basics#8-create-image-pull-secret
 pullSecrets: []
 
-# Custom configurations for HTTPRoute and HealthCheckPolicy
-gateway:
-  name: "gogateway-ai-gateway"
+# # Custom configurations for HTTPRoute and HealthCheckPolicy
+# gateway:
+#   name: "gogateway-ai-gateway"
 
-routes:
-  - name: "example"
-    enabled: true
-    hostnames: # Using direct hostnames for local templating test
-      - "dev.gogateway.ai"
-      - "*.dev.gogateway.ai"
-    configMapHostnames:
-      enabled: false # Disable ConfigMap lookup for this test
-      name: "cluster-env"
-      keys: # List of keys within the ConfigMap containing comma-separated hostnames
-        - "DOMAIN_NAME"
-        - "WILDCARD_DOMAIN_NAME"
-    matches:
-      - type: PathPrefix
-        value: "/newui"
-    healthCheck:
-      checkIntervalSec: 15
-      timeoutSec: 10
-      unhealthyThreshold: 3
-      healthyThreshold: 1
-      logConfig:
-        enabled: true
-      httpHealthCheck:
-        requestPath: "/newui"
-  # Example of another route using direct hostnames
-  # - name: "another-route"
-  #   enabled: false
-  #   hostnames:
-  #     - "another.dev.gogateway.ai"
-  #   configMapHostnames:
-  #     enabled: false # Disable ConfigMap lookup for this route
-  #     name: ""
-  #     keys: []
-  #   matches:
-  #     - type: PathPrefix
-  #       value: "/api"
-  #   healthCheck:
-  #     checkIntervalSec: 30
-  #     timeoutSec: 15
-  #     unhealthyThreshold: 5
-  #     healthyThreshold: 2
-  #     logConfig:
-  #       enabled: false
-  #     httpHealthCheck:
-  #       requestPath: "/healthz"
+# routes:
+#   - name: "example"
+#     enabled: true
+#     hostnames: # Using direct hostnames for local templating test
+#       - "dev.gogateway.ai"
+#       - "*.dev.gogateway.ai"
+#     configMapHostnames:
+#       enabled: false # Disable ConfigMap lookup for this test
+#       name: "gateway-env"
+#       keys: # List of keys within the ConfigMap containing comma-separated hostnames
+#         - "GATEWAY_DOMAIN_NAME"
+#         - "GATEWAY_WILDCARD_DOMAIN_NAME"
+#     matches:
+#       - type: PathPrefix
+#         value: "/newui"
+#     healthCheck:
+#       checkIntervalSec: 15
+#       timeoutSec: 10
+#       unhealthyThreshold: 3
+#       healthyThreshold: 1
+#       logConfig:
+#         enabled: true
+#       httpHealthCheck:
+#         requestPath: "/newui"
+#   # Example of another route using direct hostnames
+#   # - name: "another-route"
+#   #   enabled: false
+#   #   hostnames:
+#   #     - "another.dev.gogateway.ai"
+#   #   configMapHostnames:
+#   #     enabled: false # Disable ConfigMap lookup for this route
+#   #     name: ""
+#   #     keys: []
+#   #   matches:
+#   #     - type: PathPrefix
+#   #       value: "/api"
+#   #   healthCheck:
+#   #     checkIntervalSec: 30
+#   #     timeoutSec: 15
+#   #     unhealthyThreshold: 5
+#   #     healthyThreshold: 2
+#   #     logConfig:
+#   #       enabled: false
+#   #     httpHealthCheck:
+#   #       requestPath: "/healthz"
+
+# # Example of adding a custom service account
+# #
+# customServiceAccount:
+#   create: true
+#   name: service-watcher-sa
+
+# # Example of adding a service watcher role binding
+# #
+# serviceWatcher:
+#   enabled: true
+#   serviceAccountName: service-watcher-sa
+#   role:
+#     name: service-watcher-role
+#     apiGroups:
+#       - ""
+#       - apps
+#       - batch
+#     resources:
+#       - services
+#       - deployments
+#       - pods
+#   roleBinding:
+#     name: service-watcher-rolebinding
