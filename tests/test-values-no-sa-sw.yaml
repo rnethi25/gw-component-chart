@@ -1,0 +1,13 @@
+# This file is for testing purposes and intentionally omits customServiceAccount and serviceWatcher.
+containers: []
+initContainers: []
+labels: {}
+annotations: {}
+ingress:
+  disabled: false
+  labels: {}
+  annotations: {}
+  certmanager: true
+  rules: []
+volumes: []
+pullSecrets: []

@@ -6,15 +6,12 @@
 containers: []
 initContainers: []
 
-# service:
-#   type: ClusterIP
-#   labels: {}
-#   annotations: {}
-#   ports:
-#     - name: http
-#       port: 3000
-#   externalIPs: []
-#   name: "example-service"
+service:
+  type: ClusterIP
+  labels: {}
+  annotations: {}
+  ports: []
+  externalIPs: []
 
 labels: {}
 annotations: {}
@@ -34,6 +31,12 @@ volumes: []
 # DevSpace CLI will append all pull secrets which are automatically created
 # More infos on: https://devspace.cloud/docs/cli/image-building/workflow-basics#8-create-image-pull-secret
 pullSecrets: []
+
+customServiceAccount:
+  create: false
+
+serviceWatcher:
+  enabled: false
 
 # # Custom configurations for HTTPRoute and HealthCheckPolicy
 # gateway:
