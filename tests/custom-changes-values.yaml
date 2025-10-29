@@ -13,6 +13,7 @@ service:
   ports:
     - name: http
       port: 3000
+      appProtocol: kubernetes.io/ws  # Cleartext WebSocket post-ALB termination
   externalIPs: []
   name: "example-service"
 
