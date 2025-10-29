@@ -77,6 +77,9 @@ spec:
       targetPort: {{ $portMap.port }}
       {{- end }}
       protocol: {{ $portMap.protocol | default "TCP" | quote }}
+      {{- if $portMap.appProtocol }}
+      appProtocol: {{ $portMap.appProtocol | quote }}
+      {{- end }}
     {{- end }}
   selector:
     "app.kubernetes.io/name": "devspace-app"

@@ -11,6 +11,7 @@ service:
   labels: {}
   annotations: {}
   ports: []
+  # appProtocol: # Add this to each port definition
   externalIPs: []
 
 labels: {}
