@@ -221,7 +221,7 @@ spec:
           {{- end }}
           env:
 {{ toYaml $container.env | indent 12 }}
-            {{- $envMap := index $.Values.extraEnv $container.name }}
+            {{- $envMap := index $.Values.overrideEnv $container.name }}
             {{- with $envMap }}
             {{- range $envName, $envValue := . }}
             - name: {{ $envName | quote }}
@@ -269,9 +269,14 @@ spec:
               {{- end }}
               readOnly: {{ $volumeMount.volume.readOnly | default false }}
             {{- end }}
-          {{- if $container.resources }}
+          {{- $resources := $container.resources | default dict }}
+          {{- if hasKey $.Values.overrideResources $container.name }}
+            {{- $extra := index $.Values.overrideResources $container.name }}
+            {{- $resources = merge (deepCopy $extra) (deepCopy $resources) }}
+          {{- end }}
+          {{- if $resources }}
           resources:
-            {{- with $container.resources.limits }}
+            {{- with $resources.limits }}
             limits:
               {{- if .cpu }}
               cpu: {{ .cpu | quote }}
@@ -286,14 +291,14 @@ spec:
               ephemeral-storage: {{ .ephemeralStorage | quote }}
               {{- end }}
             {{- end }}
-            {{- if $container.resources.requests }}
-            {{- with $container.resources.requests }}
+            {{- if $resources.requests }}
+            {{- with $resources.requests }}
             requests:
               {{- if .cpu }}
               cpu: {{ .cpu | quote }}
               {{- else }}
-              {{- if $container.resources.limits }}
-              {{- if $container.resources.limits.cpu }}
+              {{- if $resources.limits }}
+              {{- if $resources.limits.cpu }}
               cpu: "0"
               {{- end }}
               {{- end }}
@@ -301,8 +306,8 @@ spec:
               {{- if .memory }}
               memory: {{ .memory | quote }}
               {{- else }}
-              {{- if $container.resources.limits }}
-              {{- if $container.resources.limits.memory }}
+              {{- if $resources.limits }}
+              {{- if $resources.limits.memory }}
               memory: "0"
               {{- end }}
               {{- end }}
@@ -310,23 +315,23 @@ spec:
               {{- if .ephemeralStorage }}
               ephemeral-storage: {{ .ephemeralStorage | quote }}
               {{- else }}
-              {{- if $container.resources.limits }}
-              {{- if $container.resources.limits.ephemeralStorage }}
+              {{- if $resources.limits }}
+              {{- if $resources.limits.ephemeralStorage }}
               ephemeral-storage: "0"
               {{- end }}
               {{- end }}
               {{- end }}
             {{- end }}
             {{- else }}
-            {{- if $container.resources.limits }}
+            {{- if $resources.limits }}
             requests:
-              {{- if $container.resources.limits.cpu }}
+              {{- if $resources.limits.cpu }}
               cpu: "0"
               {{- end }}
-              {{- if $container.resources.limits.memory }}
+              {{- if $resources.limits.memory }}
               memory: "0"
               {{- end }}
-              {{- if $container.resources.limits.ephemeralStorage }}
+              {{- if $resources.limits.ephemeralStorage }}
               ephemeral-storage: "0"
               {{- end }}
             {{- end }}
@@ -395,9 +400,14 @@ spec:
               {{- end }}
               readOnly: {{ $volumeMount.volume.readOnly | default false }}
             {{- end }}
-          {{- if $container.resources }}
+          {{- $resources := $container.resources | default dict }}
+          {{- if hasKey $.Values.overrideResources $container.name }}
+            {{- $extra := index $.Values.overrideResources $container.name }}
+            {{- $resources = merge (deepCopy $extra) (deepCopy $resources) }}
+          {{- end }}
+          {{- if $resources }}
           resources:
-            {{- with $container.resources.limits }}
+            {{- with $resources.limits }}
             limits:
               {{- if .cpu }}
               cpu: {{ .cpu | quote }}
@@ -409,14 +419,14 @@ spec:
               ephemeral-storage: {{ .ephemeralStorage | quote }}
               {{- end }}
             {{- end }}
-            {{- if $container.resources.requests }}
-            {{- with $container.resources.requests }}
+            {{- if $resources.requests }}
+            {{- with $resources.requests }}
             requests:
               {{- if .cpu }}
               cpu: {{ .cpu | quote }}
               {{- else }}
-              {{- if $container.resources.limits }}
-              {{- if $container.resources.limits.cpu }}
+              {{- if $resources.limits }}
+              {{- if $resources.limits.cpu }}
               cpu: "0"
               {{- end }}
               {{- end }}
@@ -424,8 +434,8 @@ spec:
               {{- if .memory }}
               memory: {{ .memory | quote }}
               {{- else }}
-              {{- if $container.resources.limits }}
-              {{- if $container.resources.limits.memory }}
+              {{- if $resources.limits }}
+              {{- if $resources.limits.memory }}
               memory: "0"
               {{- end }}
               {{- end }}
@@ -433,23 +443,23 @@ spec:
               {{- if .ephemeralStorage }}
               ephemeral-storage: {{ .ephemeralStorage | quote }}
               {{- else }}
-              {{- if $container.resources.limits }}
-              {{- if $container.resources.limits.ephemeralStorage }}
+              {{- if $resources.limits }}
+              {{- if $resources.limits.ephemeralStorage }}
               ephemeral-storage: "0"
               {{- end }}
               {{- end }}
               {{- end }}
             {{- end }}
             {{- else }}
-            {{- if $container.resources.limits }}
+            {{- if $resources.limits }}
             requests:
-              {{- if $container.resources.limits.cpu }}
+              {{- if $resources.limits.cpu }}
               cpu: "0"
               {{- end }}
-              {{- if $container.resources.limits.memory }}
+              {{- if $resources.limits.memory }}
               memory: "0"
               {{- end }}
-              {{- if $container.resources.limits.ephemeralStorage }}
+              {{- if $resources.limits.ephemeralStorage }}
               ephemeral-storage: "0"
               {{- end }}
             {{- end }}
