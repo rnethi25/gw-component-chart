@@ -160,7 +160,7 @@ serviceWatcher:
     *   When `overrideEnv` is present, it is merged with the container's existing `env`. The logic ensures that if a variable exists in both, the one from `overrideEnv` is used, and the original is removed to prevent duplicates.
     *   When `overrideResources` is present, its values are merged with the container's existing `resources`, with `overrideResources` taking precedence.
 
-*   **`templates/routes.yaml`**: (Assumed to exist or be created for this feature)
+*   **`templates/routes.yaml`**:
     *   This file would contain the logic to generate `HTTPRoute` resources based on the `$.Values.routes` configuration.
 
 *   **`templates/serviceaccount.yaml`**: 
@@ -168,3 +168,21 @@ serviceWatcher:
 
 *   **`templates/service-watcher.yaml`**: 
     *   This file would contain the logic to generate `Role` and `RoleBinding` resources based on the `$.Values.serviceWatcher` configuration.
+
+*   **`../../gateway-dev/gatewaycore/devspace-common.yaml`**:
+    *   The `deploy-with-gitops` function now supports multiple `--values-template` flags.
+    *   Each specified `values-template` file will be passed to the Helm upgrade command using separate `--values` flags.
+    *   Note: Image tag substitution and environment variable substitution in values files are currently skipped when using multiple values templates.
+
+**Usage Example for multiple `values-template` files in `devspace.yaml`:**
+
+```yaml
+pipelines:
+  deploy:
+    run: |-
+      deploy-with-gitops --chart https://github.com/gogatewayai/gw-component-chart.git#master \
+                         --release my-app \
+                         --namespace default \
+                         --values-template ./gitops/base-values.yaml \
+                         --values-template ./gitops/environment-override-values.yaml \
+                         --helm-args "--wait --atomic"
