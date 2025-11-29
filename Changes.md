@@ -8,6 +8,10 @@ This document summarizes the recent changes to the Helm chart, introducing `over
 
 Similar to how `extraEnv` was used, `overrideEnv` allows you to override or add environment variables for specific containers within your deployment. This provides a clean way to manage container-specific environment configurations without modifying the main `values.yaml` directly.
 
+**Key Behavior:**
+*   If an environment variable is defined in both the container's `env` list and `overrideEnv`, the value from `overrideEnv` takes precedence.
+*   The chart logic ensures that there are no duplicate environment variables in the final container definition. It filters out the original variable if it's being overridden.
+
 **Usage Example in `values.yaml` (or an override file):**
 
 ```yaml
@@ -153,7 +157,8 @@ serviceWatcher:
 
 *   **`templates/deployment.yaml`**:
     *   The templating logic for `containers` and `initContainers` has been updated to check for `$.Values.overrideEnv` and `$.Values.overrideResources`.
-    *   When `overrideEnv` or `overrideResources` are present for a given container name, their values are merged with the container's existing `env` and `resources` definitions, with the `overrideEnv` and `overrideResources` values taking precedence.
+    *   When `overrideEnv` is present, it is merged with the container's existing `env`. The logic ensures that if a variable exists in both, the one from `overrideEnv` is used, and the original is removed to prevent duplicates.
+    *   When `overrideResources` is present, its values are merged with the container's existing `resources`, with `overrideResources` taking precedence.
 
 *   **`templates/routes.yaml`**: (Assumed to exist or be created for this feature)
     *   This file would contain the logic to generate `HTTPRoute` resources based on the `$.Values.routes` configuration.

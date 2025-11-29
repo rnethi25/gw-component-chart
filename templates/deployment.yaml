@@ -220,19 +220,24 @@ spec:
           terminationMessagePolicy: {{ $container.terminationMessagePolicy }}
           {{- end }}
           env:
-{{ toYaml $container.env | indent 12 }}
-            {{- $envMap := index $.Values.overrideEnv $container.name }}
-            {{- with $envMap }}
-            {{- range $envName, $envValue := . }}
+            {{- $envMap := index $.Values.overrideEnv $container.name | default dict }}
+            {{- $finalEnv := list }}
+            {{- range $envIndex, $envVar := $container.env }}
+              {{- if not (hasKey $envMap $envVar.name) }}
+                {{- $finalEnv = append $finalEnv $envVar }}
+              {{- end }}
+            {{- end }}
+{{ toYaml $finalEnv | indent 12 }}
+            {{- range $envName, $envValue := $envMap }}
             - name: {{ $envName | quote }}
               {{- if kindIs "string" $envValue }}
               value: {{ $envValue | quote }}
               {{- else if hasKey $envValue "value" }}
               value: {{ $envValue.value | quote }}
               {{- else }}
-              valueFrom: {{ toYaml $envValue | nindent 12 }}
+              valueFrom:
+{{ toYaml $envValue | indent 16 }}
               {{- end }}
-            {{- end }}
             {{- end }}
           envFrom:
 {{ toYaml $container.envFrom | indent 12 }}
@@ -376,7 +381,25 @@ spec:
           terminationMessagePolicy: {{ $container.terminationMessagePolicy }}
           {{- end }}
           env:
-{{ toYaml $container.env | indent 12 }}
+            {{- $envMap := index $.Values.overrideEnv $container.name | default dict }}
+            {{- $finalEnv := list }}
+            {{- range $envIndex, $envVar := $container.env }}
+              {{- if not (hasKey $envMap $envVar.name) }}
+                {{- $finalEnv = append $finalEnv $envVar }}
+              {{- end }}
+            {{- end }}
+{{ toYaml $finalEnv | indent 12 }}
+            {{- range $envName, $envValue := $envMap }}
+            - name: {{ $envName | quote }}
+              {{- if kindIs "string" $envValue }}
+              value: {{ $envValue | quote }}
+              {{- else if hasKey $envValue "value" }}
+              value: {{ $envValue.value | quote }}
+              {{- else }}
+              valueFrom:
+{{ toYaml $envValue | indent 16 }}
+              {{- end }}
+            {{- end }}
           envFrom:
 {{ toYaml $container.envFrom | indent 12 }}
           securityContext:
