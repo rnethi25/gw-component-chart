@@ -221,6 +221,19 @@ spec:
           {{- end }}
           env:
 {{ toYaml $container.env | indent 12 }}
+            {{- $envMap := index $.Values.extraEnv $container.name }}
+            {{- with $envMap }}
+            {{- range $envName, $envValue := . }}
+            - name: {{ $envName | quote }}
+              {{- if kindIs "string" $envValue }}
+              value: {{ $envValue | quote }}
+              {{- else if hasKey $envValue "value" }}
+              value: {{ $envValue.value | quote }}
+              {{- else }}
+              valueFrom: {{ toYaml $envValue | nindent 12 }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
           envFrom:
 {{ toYaml $container.envFrom | indent 12 }}
           {{- if $container.ports }}

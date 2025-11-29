@@ -39,6 +39,10 @@ customServiceAccount:
 serviceWatcher:
   enabled: false
 
+# Add overridable env. env specified in
+# extraEnv can be overriden via additional vlaues files
+extraEnv: {}
+
 # # Custom configurations for HTTPRoute and HealthCheckPolicy
 # gateway:
 #   name: "gogateway-ai-gateway"
