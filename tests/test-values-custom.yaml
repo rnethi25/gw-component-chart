@@ -1,0 +1,36 @@
+containers:
+  - name: my-app-container
+    image: "original-registry/my-app:v1.0.0"
+    env:
+      - name: ORIGINAL_ENV
+        value: "original_value"
+      - name: DEBUG_MODE
+        value: "false"
+    resources:
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+  - name: another-container
+    image: "original-registry/another-app:v1.0.0"
+    env:
+      - name: ANOTHER_ORIGINAL_ENV
+        value: "another_original_value"
+      - name: LOG_LEVEL
+        value: "debug"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+
+overrideContainers:
+  another-container: 
+    image: "original-registry/another-app:v1.0.1"
+    env:
+      ANOTHER_ORIGINAL_ENV: "different-inside"
+      LOG_LEVEL: "info"

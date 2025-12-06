@@ -1,0 +1,27 @@
+
+overrideContainers:
+  my-app-container:
+    image: "my-registry/my-app:v2.0.0"
+    env:
+      DEBUG_MODE: "true"
+      ORIGINAL_ENV: "https://api.example.com/v2"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+  another-container: 
+
+    env:
+      ANOTHER_ORIGINAL_ENV: "different"
+      LOG_LEVEL: "error"
+
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "2Gi"
+      requests:
+        cpu: "250m"
+        memory: "512Mi"

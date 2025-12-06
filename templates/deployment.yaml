@@ -184,7 +184,8 @@ spec:
 {{ toYaml $.Values.ephemeralContainers | indent 8 }}
       containers:
         {{- range $containerIndex, $container := $.Values.containers }}
-        - image: {{ $container.image | quote }}
+          {{- $overrideContainer := index $.Values.overrideContainers $container.name | default dict }}
+        - image: {{ default $container.image $overrideContainer.image | quote }}
           {{- if $container.name }}
           name: {{ $container.name | quote }}
           {{- else }}
@@ -220,25 +221,23 @@ spec:
           terminationMessagePolicy: {{ $container.terminationMessagePolicy }}
           {{- end }}
           env:
-            {{- $envMap := index $.Values.overrideEnv $container.name | default dict }}
-            {{- $finalEnv := list }}
-            {{- range $envIndex, $envVar := $container.env }}
-              {{- if not (hasKey $envMap $envVar.name) }}
-                {{- $finalEnv = append $finalEnv $envVar }}
+            {{- $mergedEnvVars := list }}
+            {{- $overrideEnvMap := $overrideContainer.env | default dict }}
+
+            {{- range $envVar := $container.env }}
+              {{- if not (hasKey $overrideEnvMap $envVar.name) }}
+                {{- $mergedEnvVars = append $mergedEnvVars $envVar }}
               {{- end }}
             {{- end }}
-{{ toYaml $finalEnv | indent 12 }}
-            {{- range $envName, $envValue := $envMap }}
-            - name: {{ $envName | quote }}
+
+            {{- range $envName, $envValue := $overrideEnvMap }}
               {{- if kindIs "string" $envValue }}
-              value: {{ $envValue | quote }}
-              {{- else if hasKey $envValue "value" }}
-              value: {{ $envValue.value | quote }}
+                {{- $mergedEnvVars = append $mergedEnvVars (dict "name" $envName "value" $envValue) }}
               {{- else }}
-              valueFrom:
-{{ toYaml $envValue | indent 16 }}
+                {{- $mergedEnvVars = append $mergedEnvVars (merge (dict "name" $envName) $envValue) }}
               {{- end }}
             {{- end }}
+            {{- toYaml $mergedEnvVars | nindent 12 }}
           envFrom:
 {{ toYaml $container.envFrom | indent 12 }}
           {{- if $container.ports }}
@@ -275,8 +274,8 @@ spec:
               readOnly: {{ $volumeMount.volume.readOnly | default false }}
             {{- end }}
           {{- $resources := $container.resources | default dict }}
-          {{- if hasKey $.Values.overrideResources $container.name }}
-            {{- $extra := index $.Values.overrideResources $container.name }}
+          {{- if hasKey $overrideContainer "resources" }}
+            {{- $extra := $overrideContainer.resources }}
             {{- $resources = merge (deepCopy $extra) (deepCopy $resources) }}
           {{- end }}
           {{- if $resources }}
@@ -345,7 +344,8 @@ spec:
         {{- end }}
       initContainers:
         {{- range $containerIndex, $container := $.Values.initContainers }}
-        - image: {{ $container.image | quote }}
+          {{- $overrideContainer := index $.Values.overrideContainers $container.name | default dict }}
+        - image: {{ default $container.image $overrideContainer.image | quote }}
           {{- if $container.name }}
           name: {{ $container.name | quote }}
           {{- else }}
@@ -381,27 +381,23 @@ spec:
           terminationMessagePolicy: {{ $container.terminationMessagePolicy }}
           {{- end }}
           env:
-            {{- $envMap := index $.Values.overrideEnv $container.name | default dict }}
-            {{- $finalEnv := list }}
-            {{- range $envIndex, $envVar := $container.env }}
-              {{- if not (hasKey $envMap $envVar.name) }}
-                {{- $finalEnv = append $finalEnv $envVar }}
+            {{- $mergedEnvVars := list }}
+            {{- $overrideEnvMap := $overrideContainer.env | default dict }}
+
+            {{- range $envVar := $container.env }}
+              {{- if not (hasKey $overrideEnvMap $envVar.name) }}
+                {{- $mergedEnvVars = append $mergedEnvVars $envVar }}
               {{- end }}
             {{- end }}
-{{ toYaml $finalEnv | indent 12 }}
-            {{- range $envName, $envValue := $envMap }}
-            - name: {{ $envName | quote }}
+
+            {{- range $envName, $envValue := $overrideEnvMap }}
               {{- if kindIs "string" $envValue }}
-              value: {{ $envValue | quote }}
-              {{- else if hasKey $envValue "value" }}
-              value: {{ $envValue.value | quote }}
+                {{- $mergedEnvVars = append $mergedEnvVars (dict "name" $envName "value" $envValue) }}
               {{- else }}
-              valueFrom:
-{{ toYaml $envValue | indent 16 }}
+                {{- $mergedEnvVars = append $mergedEnvVars (merge (dict "name" $envName) $envValue) }}
               {{- end }}
             {{- end }}
-          envFrom:
-{{ toYaml $container.envFrom | indent 12 }}
+            {{- toYaml $mergedEnvVars | nindent 12 }}
           securityContext:
 {{ toYaml $container.securityContext | indent 12 }}
           lifecycle:
@@ -424,8 +420,8 @@ spec:
               readOnly: {{ $volumeMount.volume.readOnly | default false }}
             {{- end }}
           {{- $resources := $container.resources | default dict }}
-          {{- if hasKey $.Values.overrideResources $container.name }}
-            {{- $extra := index $.Values.overrideResources $container.name }}
+          {{- if hasKey $overrideContainer "resources" }}
+            {{- $extra := $overrideContainer.resources }}
             {{- $resources = merge (deepCopy $extra) (deepCopy $resources) }}
           {{- end }}
           {{- if $resources }}
@@ -434,6 +430,9 @@ spec:
             limits:
               {{- if .cpu }}
               cpu: {{ .cpu | quote }}
+              {{- end }}
+              {{- if .gpu }}
+              nvidia.com/gpu: {{ .gpu | quote }}
               {{- end }}
               {{- if .memory }}
               memory: {{ .memory | quote }}
@@ -599,6 +598,7 @@ metadata:
   {{- end }}
   labels:
     "app.kubernetes.io/name": {{ $.Release.Name | quote }}
+    "app.kubernetes.io/component": {{ $.Release.Name | quote }}
     "app.kubernetes.io/managed-by": {{ $.Release.Service | quote }}
     {{- range $labelName, $labelValue := $.Values.labels }}
     {{ $labelName | quote }}: {{ $labelValue | quote }}
