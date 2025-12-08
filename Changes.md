@@ -1,53 +1,48 @@
 # Changes Summary
 
-This document summarizes the recent changes to the Helm chart, introducing `overrideEnv` and `overrideResources` for more flexible container configuration, detailing the new Kubernetes Gateway API routes feature, and explaining the `customServiceAccount` and `serviceWatcher` configurations.
+This document summarizes the recent changes to the Helm chart, introducing `overrideContainer` for more flexible container configuration, detailing the new Kubernetes Gateway API routes feature, and explaining the `customServiceAccount` and `serviceWatcher` configurations.
 
 ## New Features
 
-### 1. `overrideEnv` for Environment Variable Overrides
+### 1. `overrideContainer` for Unified Container Overrides
 
-Similar to how `extraEnv` was used, `overrideEnv` allows you to override or add environment variables for specific containers within your deployment. This provides a clean way to manage container-specific environment configurations without modifying the main `values.yaml` directly.
+This new feature provides a unified way to override container properties such as `image`, `env` (environment variables), and `resources` (CPU/memory limits and requests) for specific containers within your deployment. This simplifies managing container-specific configurations without directly modifying the main `values.yaml` or needing separate override fields for each property.
 
 **Key Behavior:**
-*   If an environment variable is defined in both the container's `env` list and `overrideEnv`, the value from `overrideEnv` takes precedence.
-*   The chart logic ensures that there are no duplicate environment variables in the final container definition. It filters out the original variable if it's being overridden.
+*   If a property (image, environment variable, or resource) is defined in both the container's original definition and `overrideContainer`, the value from `overrideContainer` takes precedence.
+*   For environment variables, the logic ensures no duplicate variables in the final container definition; the original is filtered out if overridden.
+*   For resources, `overrideContainer` values are merged with existing resources, with `overrideContainer` taking precedence.
 
 **Usage Example in `values.yaml` (or an override file):**
 
 ```yaml
-overrideEnv:
+overrideContainers:
   my-app-container: # Replace 'my-app-container' with your container's name
-    DEBUG_MODE: "true"
-    API_ENDPOINT: "https://api.example.com/v2"
+    image: "my-registry/my-app:v2.0.0"
+    env:
+      DEBUG_MODE: "true"
+      API_ENDPOINT: "https://api.example.com/v2"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
   another-container:
-    LOG_LEVEL: "info"
+    image: "another-registry/another-app:latest"
+    env:
+      LOG_LEVEL: "info"
+    resources:
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
 ```
 
-### 2. `overrideResources` for Container Resource Overrides
-
-This new feature enables overriding resource `limits` and `requests` for individual containers. This is particularly useful for fine-tuning resource allocation for specific containers in different environments (e.g., development, staging, production) without altering the base chart.
-
-**Usage Example in `values.yaml` (or an override file):**
-
-```yaml
-overrideResources:
-  my-app-container: # Replace 'my-app-container' with your container's name
-    limits:
-      cpu: "500m"
-      memory: "1Gi"
-    requests:
-      cpu: "250m"
-      memory: "512Mi"
-  another-container:
-    limits:
-      cpu: "1"
-      memory: "2Gi"
-    requests:
-      cpu: "500m"
-      memory: "1Gi"
-```
-
-### 3. Kubernetes Gateway API Routes
+### 2. Kubernetes Gateway API Routes
 
 This Helm chart now supports defining Kubernetes Gateway API `HTTPRoute` resources directly through `values.yaml`, offering a modern alternative to traditional Ingress for managing external access to services. This feature allows for more advanced traffic management capabilities.
 
@@ -100,7 +95,7 @@ routes:
   #       requestPath: "/healthz"
 ```
 
-### 4. `customServiceAccount` for Custom Service Accounts
+### 3. `customServiceAccount` for Custom Service Accounts
 
 The `customServiceAccount` configuration allows you to create and manage a dedicated Kubernetes Service Account for your deployment. This is useful when your application requires specific permissions that are not covered by the default service account, or when you need to integrate with external identity providers.
 
@@ -117,7 +112,7 @@ customServiceAccount:
   name: my-custom-service-account
 ```
 
-### 5. `serviceWatcher` for Service Monitoring and Role Bindings
+### 4. `serviceWatcher` for Service Monitoring and Role Bindings
 
 The `serviceWatcher` feature enables the deployment of a service watcher component that can monitor Kubernetes services and create necessary Role and RoleBinding resources. This is particularly useful for applications that need to dynamically discover and interact with other services within the cluster, or when you need to grant specific permissions to the service watcher itself.
 
@@ -149,16 +144,14 @@ serviceWatcher:
 ## Implementation Details
 
 *   **`values.yaml`**:
-    *   The `extraEnv` field has been renamed to `overrideEnv`.
-    *   A new field `overrideResources` has been added.
+    *   The `overrideEnv` and `overrideResources` fields have been replaced by a new unified field `overrideContainers`.
     *   New `gateway` and `routes` configuration blocks have been added to support Kubernetes Gateway API.
     *   New `customServiceAccount` and `serviceWatcher` configuration blocks have been added.
     *   Comments have been updated to reflect these changes and provide guidance.
 
 *   **`templates/deployment.yaml`**:
-    *   The templating logic for `containers` and `initContainers` has been updated to check for `$.Values.overrideEnv` and `$.Values.overrideResources`.
-    *   When `overrideEnv` is present, it is merged with the container's existing `env`. The logic ensures that if a variable exists in both, the one from `overrideEnv` is used, and the original is removed to prevent duplicates.
-    *   When `overrideResources` is present, its values are merged with the container's existing `resources`, with `overrideResources` taking precedence.
+    *   The templating logic for `containers` and `initContainers` has been updated to check for `$.Values.overrideContainers`.
+    *   When `overrideContainers` is present for a specific container, its `image`, `env`, and `resources` values are merged with the container's existing definitions, with `overrideContainers` taking precedence.
 
 *   **`templates/routes.yaml`**:
     *   This file would contain the logic to generate `HTTPRoute` resources based on the `$.Values.routes` configuration.

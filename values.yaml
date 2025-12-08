@@ -39,13 +39,10 @@ customServiceAccount:
 serviceWatcher:
   enabled: false
 
-# Add overridable env. env specified in
-# overrideEnv can be overriden via additional vlaues files
-# note that env and overrideEnv cannot have same names - these are not automatically merged
-overrideEnv: {}
-# Add overridable resources. resources specified in
-# overrideResources can be overriden via additional vlaues files
-overrideResources: {}
+# Add overridable container configurations.
+# Configurations specified in overrideContainers can be overridden via additional values files.
+# This allows overriding image, environment variables, and resources for specific containers.
+overrideContainers: {}
 
 # # Custom configurations for HTTPRoute and HealthCheckPolicy
 # gateway:
