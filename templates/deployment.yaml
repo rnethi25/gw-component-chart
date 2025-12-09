@@ -184,7 +184,8 @@ spec:
 {{ toYaml $.Values.ephemeralContainers | indent 8 }}
       containers:
         {{- range $containerIndex, $container := $.Values.containers }}
-          {{- $overrideContainer := index $.Values.overrideContainers $container.name | default dict }}
+          {{- $containerName := default (printf "container-%d" $containerIndex) $container.name }}
+          {{- $overrideContainer := index ($.Values.overrideContainers | default dict) $containerName | default dict }}
         - image: {{ default $container.image $overrideContainer.image | quote }}
           {{- if $container.name }}
           name: {{ $container.name | quote }}
@@ -344,7 +345,8 @@ spec:
         {{- end }}
       initContainers:
         {{- range $containerIndex, $container := $.Values.initContainers }}
-          {{- $overrideContainer := index $.Values.overrideContainers $container.name | default dict }}
+          {{- $containerName := default (printf "init-container-%d" $containerIndex) $container.name }}
+          {{- $overrideContainer := index ($.Values.overrideContainers | default dict) $containerName | default dict }}
         - image: {{ default $container.image $overrideContainer.image | quote }}
           {{- if $container.name }}
           name: {{ $container.name | quote }}
