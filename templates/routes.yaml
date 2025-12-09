@@ -43,9 +43,28 @@ spec:
         type: {{ .type }}
         value: {{ .value | quote }}
     {{- end }}
+    {{- if $route.backendPath }}
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: {{ $route.backendPath | quote }}
+    {{- end }}
     backendRefs:
     - name: {{ $.Values.service.name }}
-      port: {{ range $.Values.service.ports }}{{- if eq .name "http" }}{{ .port }}{{- end }}{{- end }}
+      {{- $portName := $route.servicePortName | default "http" }}
+      {{- $targetPort := "" }}
+      {{- range $.Values.service.ports }}
+        {{- if eq .name $portName }}
+          {{- $targetPort = .port }}
+        {{- end }}
+      {{- end }}
+      {{- if not $targetPort }}
+        {{- fail (printf "Service port with name '%s' not found for service '%s' in route '%s'" $portName $.Values.service.name $route.name) }}
+      {{- end }}
+      port: {{ $targetPort }}
+{{- if $route.healthCheck }}
 ---
 apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
@@ -67,7 +86,18 @@ spec:
     config:
       type: "HTTP"
       httpHealthCheck:
-        port: {{ range $.Values.service.ports }}{{- if eq .name "http" }}{{ .port }}{{- end }}{{- end }}
+        {{- $healthCheckPortName := $route.servicePortName | default "http" }}
+        {{- $healthCheckTargetPort := "" }}
+        {{- range $.Values.service.ports }}
+          {{- if eq .name $healthCheckPortName }}
+            {{- $healthCheckTargetPort = .port }}
+          {{- end }}
+        {{- end }}
+        {{- if not $healthCheckTargetPort }}
+          {{- fail (printf "Service port with name '%s' not found for health check of service '%s' in route '%s'" $healthCheckPortName $.Values.service.name $route.name) }}
+        {{- end }}
+        port: {{ $healthCheckTargetPort }}
         requestPath: {{ $route.healthCheck.httpHealthCheck.requestPath | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
