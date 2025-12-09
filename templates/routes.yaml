@@ -64,6 +64,7 @@ spec:
         {{- fail (printf "Service port with name '%s' not found for service '%s' in route '%s'" $portName $.Values.service.name $route.name) }}
       {{- end }}
       port: {{ $targetPort }}
+{{- if $route.healthCheck }}
 ---
 apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
@@ -97,5 +98,6 @@ spec:
         {{- end }}
         port: {{ $healthCheckTargetPort }}
         requestPath: {{ $route.healthCheck.httpHealthCheck.requestPath | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
