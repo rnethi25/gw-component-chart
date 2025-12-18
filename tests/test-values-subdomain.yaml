@@ -1,0 +1,49 @@
+# Example values file demonstrating subdomain feature
+
+gateway:
+  name: "example-gateway"
+
+service:
+  name: "example-service"
+  ports:
+    - name: http
+      port: 8080
+
+routes:
+  - name: "example-with-subdomains"
+    enabled: true
+    configMapHostnames:
+      enabled: true
+      name: "gateway-env"
+      keys:
+        - "GATEWAY_DOMAIN_NAME"  # e.g., contains "dev.example.com"
+      subdomains:  # New feature: add these subdomains to each domain from ConfigMap
+        - "internal"  # Will create internal.dev.example.com
+        - "api"       # Will create api.dev.example.com
+    matches:
+      - type: PathPrefix
+        value: "/"
+    servicePortName: "http"
+    healthCheck:
+      checkIntervalSec: 15
+      timeoutSec: 10
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      logConfig:
+        enabled: true
+      httpHealthCheck:
+        requestPath: "/health"
+
+  # Example without subdomains (backward compatible)
+  - name: "example-no-subdomains"
+    enabled: true
+    configMapHostnames:
+      enabled: true
+      name: "gateway-env"
+      keys:
+        - "GATEWAY_DOMAIN_NAME"
+      # No subdomains field - will only use the domains from ConfigMap as-is
+    matches:
+      - type: PathPrefix
+        value: "/api"
+    servicePortName: "http"

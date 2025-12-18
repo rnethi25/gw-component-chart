@@ -19,7 +19,15 @@ spec:
         {{- $hostnamesString := index $configMap.data $key }}
         {{- if $hostnamesString }}
           {{- range split "," $hostnamesString }}
-            {{- $allHostnames = append $allHostnames (. | trim) }}
+            {{- $hostname := . | trim }}
+            {{- $allHostnames = append $allHostnames $hostname }}
+            {{- /* Add subdomain prefixed versions if subdomains are specified */ -}}
+            {{- if $route.configMapHostnames.subdomains }}
+              {{- range $subdomain := $route.configMapHostnames.subdomains }}
+                {{- $subdomainHostname := printf "%s.%s" $subdomain $hostname }}
+                {{- $allHostnames = append $allHostnames $subdomainHostname }}
+              {{- end }}
+            {{- end }}
           {{- end }}
         {{- else }}
           {{- fail (printf "ConfigMap key '%s' not found in ConfigMap '%s' for route '%s'" $key $route.configMapHostnames.name $route.name) }}
