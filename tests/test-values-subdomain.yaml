@@ -17,9 +17,9 @@ routes:
       name: "gateway-env"
       keys:
         - "GATEWAY_DOMAIN_NAME"  # e.g., contains "dev.example.com"
-      subdomains:  # New feature: add these subdomains to each domain from ConfigMap
-        - "internal"  # Will create internal.dev.example.com
-        - "api"       # Will create api.dev.example.com
+      subdomains:  # When specified, ONLY these subdomain versions are created
+        - "internal"  # Will create ONLY internal.dev.example.com (NOT dev.example.com)
+        - "api"       # Will create ONLY api.dev.example.com
     matches:
       - type: PathPrefix
         value: "/"
@@ -42,7 +42,7 @@ routes:
       name: "gateway-env"
       keys:
         - "GATEWAY_DOMAIN_NAME"
-      # No subdomains field - will only use the domains from ConfigMap as-is
+      # No subdomains field - will use the domains from ConfigMap as-is
     matches:
       - type: PathPrefix
         value: "/api"

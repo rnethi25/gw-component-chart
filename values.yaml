@@ -60,9 +60,9 @@ overrideContainers: {}
 #       keys: # List of keys within the ConfigMap containing comma-separated hostnames
 #         - "GATEWAY_DOMAIN_NAME"
 #         - "GATEWAY_WILDCARD_DOMAIN_NAME"
-#       subdomains: # Optional: List of subdomains to prepend to each domain from ConfigMap
-#         - "internal"  # Example: if ConfigMap has "dev.example.com", this creates "internal.dev.example.com"
-#         - "api"       # Example: if ConfigMap has "dev.example.com", this creates "api.dev.example.com"
+#       subdomains: # Optional: When specified, ONLY subdomain versions are created (base domain is excluded)
+#         - "internal"  # Example: if ConfigMap has "dev.example.com", this creates ONLY "internal.dev.example.com"
+#         - "api"       # Example: if ConfigMap has "dev.example.com", this creates ONLY "api.dev.example.com"
 #     matches:
 #       - type: PathPrefix
 #         value: "/newui"
@@ -84,7 +84,7 @@ overrideContainers: {}
 #   #     enabled: false # Disable ConfigMap lookup for this route
 #   #     name: ""
 #   #     keys: []
-#   #     subdomains: [] # Optional subdomain prefixes
+#   #     subdomains: [] # Optional: When specified, ONLY subdomain versions are created
 #   #   matches:
 #   #     - type: PathPrefix
 #   #       value: "/api"
