@@ -46,6 +46,69 @@ overrideContainers:
 
 This Helm chart now supports defining Kubernetes Gateway API `HTTPRoute` resources directly through `values.yaml`, offering a modern alternative to traditional Ingress for managing external access to services. This feature allows for more advanced traffic management capabilities.
 
+#### 2.1 Subdomain Support for ConfigMap Hostnames (New)
+
+The HTTPRoute template now supports adding subdomain prefixes to domains retrieved from ConfigMaps. This feature allows you to dynamically create subdomain variations of your base domains without hardcoding them.
+
+**How It Works:**
+When you enable `configMapHostnames` for a route and specify `subdomains`, the template will:
+1. Retrieve the domain names from the specified ConfigMap keys
+2. For each subdomain in the `subdomains` list, create a hostname by prepending the subdomain to each domain
+3. **Important**: When subdomains are specified, ONLY the subdomain-prefixed hostnames are added. The original domain without a subdomain is NOT included.
+
+**Configuration:**
+Add the `subdomains` field under `configMapHostnames`:
+
+```yaml
+routes:
+  - name: "my-route"
+    enabled: true
+    configMapHostnames:
+      enabled: true
+      name: "gateway-env"
+      keys:
+        - "GATEWAY_DOMAIN_NAME"  # e.g., contains "dev.example.com"
+      subdomains:  # Optional field - when specified, ONLY subdomain versions are created
+        - "internal"  # Creates: internal.dev.example.com (NOT dev.example.com)
+        - "api"       # Creates: api.dev.example.com
+```
+
+**Example:**
+If your ConfigMap contains:
+```yaml
+data:
+  GATEWAY_DOMAIN_NAME: "dev.example.com,staging.example.com"
+```
+
+And your route configuration includes:
+```yaml
+configMapHostnames:
+  enabled: true
+  name: "gateway-env"
+  keys:
+    - "GATEWAY_DOMAIN_NAME"
+  subdomains:
+    - "internal"
+    - "api"
+```
+
+The resulting hostnames will be:
+- `internal.dev.example.com` (subdomain added)
+- `api.dev.example.com` (subdomain added)
+- `internal.staging.example.com` (subdomain added)
+- `api.staging.example.com` (subdomain added)
+
+Note: The original domains (`dev.example.com` and `staging.example.com`) are NOT included when subdomains are specified.
+
+**Backward Compatibility:**
+This feature is fully backward compatible. If you don't specify the `subdomains` field, the template will behave exactly as before, using the domains from the ConfigMap as-is without any modifications.
+
+**Use Cases:**
+- Creating environment-specific subdomains (internal, api, admin) without exposing the base domain
+- Multi-tenant applications where each tenant gets a specific subdomain
+- Service-specific routing (api.domain, app.domain, admin.domain) with restricted access
+- Testing and staging environments with consistent subdomain patterns
+
 **Usage Example in `values.yaml` (or an override file):**
 
 ```yaml
@@ -64,6 +127,9 @@ routes:
       keys: # List of keys within the ConfigMap containing comma-separated hostnames
         - "GATEWAY_DOMAIN_NAME"
         - "GATEWAY_WILDCARD_DOMAIN_NAME"
+      subdomains: # Optional: When specified, ONLY these subdomain versions are created
+        - "internal"  # Example: if ConfigMap has "dev.example.com", this creates ONLY "internal.dev.example.com"
+        - "api"       # Example: if ConfigMap has "dev.example.com", this creates ONLY "api.dev.example.com"
     matches:
       - type: PathPrefix
         value: "/newui"
@@ -147,6 +213,7 @@ serviceWatcher:
     *   The `overrideEnv` and `overrideResources` fields have been replaced by a new unified field `overrideContainers`.
     *   New `gateway` and `routes` configuration blocks have been added to support Kubernetes Gateway API.
     *   New `customServiceAccount` and `serviceWatcher` configuration blocks have been added.
+    *   The `routes` configuration now supports an optional `subdomains` field under `configMapHostnames` for dynamic subdomain creation.
     *   Comments have been updated to reflect these changes and provide guidance.
 
 *   **`templates/deployment.yaml`**:
@@ -154,7 +221,8 @@ serviceWatcher:
     *   When `overrideContainers` is present for a specific container, its `image`, `env`, and `resources` values are merged with the container's existing definitions, with `overrideContainers` taking precedence.
 
 *   **`templates/routes.yaml`**:
-    *   This file would contain the logic to generate `HTTPRoute` resources based on the `$.Values.routes` configuration.
+    *   This file contains the logic to generate `HTTPRoute` resources based on the `$.Values.routes` configuration.
+    *   Updated to support the new `subdomains` field under `configMapHostnames`. When subdomains are specified, ONLY the subdomain-prefixed hostnames are created (the base domain is excluded).
 
 *   **`templates/serviceaccount.yaml`**: 
     *   This file would contain the logic to generate `ServiceAccount` resources based on the `$.Values.customServiceAccount` configuration.
