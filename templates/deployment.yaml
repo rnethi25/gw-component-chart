@@ -4,10 +4,10 @@ apiVersion: apps/v1
 {{- $kind := "Deployment" }}
 {{- range $containerIndex, $container := $.Values.containers }}
   {{- range $volumeMountIndex, $volumeMount := $container.volumeMounts }}
-    {{- if $volumeMount.volume.readOnly }}
+    {{- if or $volumeMount.readOnly $volumeMount.volume.readOnly }}
     {{- else }}
       {{- range $volumeIndex, $volume := $.Values.volumes }}
-        {{- if not (or (hasKey $volume "secret") (hasKey $volume "configMap") (hasKey $volume "emptyDir") (hasKey $volume "hostPath") ) }}
+        {{- if not (or (hasKey $volume "secret") (hasKey $volume "configMap") (hasKey $volume "emptyDir") (hasKey $volume "hostPath") (hasKey $volume "ephemeral") ) }}
         {{- if eq $volumeMount.volume.name $volume.name }}
           {{- $kind = "StatefulSet" }}
         {{- end }}
@@ -272,7 +272,7 @@ spec:
               {{- if $volumeMount.volume.subPath }}
               subPath: {{ trimAll "/" $volumeMount.volume.subPath | default "" | quote }}
               {{- end }}
-              readOnly: {{ $volumeMount.volume.readOnly | default false }}
+              readOnly: {{ if hasKey $volumeMount "readOnly" }}{{ $volumeMount.readOnly }}{{ else }}{{ $volumeMount.volume.readOnly | default false }}{{ end }}
             {{- end }}
           {{- $resources := $container.resources | default dict }}
           {{- if hasKey $overrideContainer "resources" }}
@@ -419,7 +419,7 @@ spec:
               {{- if $volumeMount.volume.subPath }}
               subPath: {{ trimAll "/" $volumeMount.volume.subPath | default "" | quote }}
               {{- end }}
-              readOnly: {{ $volumeMount.volume.readOnly | default false }}
+              readOnly: {{ if hasKey $volumeMount "readOnly" }}{{ $volumeMount.readOnly }}{{ else }}{{ $volumeMount.volume.readOnly | default false }}{{ end }}
             {{- end }}
           {{- $resources := $container.resources | default dict }}
           {{- if hasKey $overrideContainer "resources" }}
@@ -495,7 +495,7 @@ spec:
         {{- $isVolumeOfThisComponent := false }}
         {{- range $containerIndex, $container := $allContainers }}
           {{- range $volumeMountIndex, $volumeMount := $container.volumeMounts }}
-            {{- if or $volumeMount.volume.readOnly $volumeMount.volume.shared $volume.secret $volume.configMap (hasKey $volume "emptyDir") (hasKey $volume "hostPath") }}
+            {{- if or $volumeMount.readOnly $volumeMount.volume.readOnly $volumeMount.volume.shared $volume.secret $volume.configMap (hasKey $volume "emptyDir") (hasKey $volume "hostPath") (hasKey $volume "ephemeral") }}
               {{- if eq $volume.name $volumeMount.volume.name }}
                 {{- $isVolumeOfThisComponent = true }}
               {{- end }}
@@ -520,8 +520,13 @@ spec:
           hostPath:
 {{ toYaml $volume.hostPath | indent 12 }}
           {{- else }}
+          {{- if hasKey $volume "ephemeral" }}
+          ephemeral:
+{{ toYaml $volume.ephemeral | indent 12 }}
+          {{- else }}
           persistentVolumeClaim:
             claimName: {{ $volume.name | quote }}
+          {{- end }}
           {{- end }}
           {{- end }}
           {{- end }}
@@ -531,7 +536,7 @@ spec:
   {{- if eq $kind "StatefulSet" }}
   volumeClaimTemplates:
     {{- range $volumeIndex, $volume := $.Values.volumes }}
-    {{- if or $volume.secret $volume.configMap (hasKey $volume "emptyDir") (hasKey $volume "hostPath") }}
+    {{- if or $volume.secret $volume.configMap (hasKey $volume "emptyDir") (hasKey $volume "hostPath") (hasKey $volume "ephemeral") }}
     {{- else }}
     {{- $isVolumeTemplateOfThisComponent := false }}
     {{- range $containerIndex, $container := $allContainers }}
